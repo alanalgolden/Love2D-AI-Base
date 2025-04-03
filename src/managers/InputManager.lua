@@ -15,10 +15,14 @@ local state = {
         touch = 0
     },
     onInputTypeChanged = nil, -- Callback for input type changes
+    keyPressCallbacks = {},   -- List of key press callbacks
     joystickDeadzone = 0.5,   -- Minimum value for joystick movement
     lastJoystickDirection = nil,
     joystickRepeatDelay = 0.2, -- Delay between joystick navigation events
-    lastJoystickTime = 0
+    lastJoystickTime = 0,
+    lastInputTypeChange = 0,  -- Time of last input type change
+    inputTypeCooldown = 1.0,  -- Cooldown in seconds before allowing input type change
+    onGamepadPress = nil      -- Callback for gamepad button press events
 }
 
 -- Input types
@@ -53,7 +57,7 @@ function InputManager.update(dt)
         InputManager.setInputType(nil)
     end
     
-    -- Always check for joystick movement, regardless of current input type
+    -- Always check for joystick movement
     InputManager.handleJoystickMovement(dt)
 end
 
@@ -71,10 +75,8 @@ function InputManager.handleJoystickMovement(dt)
     
     -- Check if joystick is moved beyond deadzone
     if math.abs(axisX) > state.joystickDeadzone or math.abs(axisY) > state.joystickDeadzone then
-        -- Update input type to gamepad if not already set
-        if state.currentInputType ~= INPUT_TYPES.GAMEPAD then
-            InputManager.updateInputType(INPUT_TYPES.GAMEPAD)
-        end
+        -- Update input type to gamepad
+        InputManager.updateInputType(INPUT_TYPES.GAMEPAD)
         
         -- Determine direction based on axis values
         local direction = nil
@@ -113,8 +115,17 @@ end
 
 -- Set the current input type and notify listeners
 function InputManager.setInputType(inputType)
+    local currentTime = love.timer.getTime()
+    
+    -- Check cooldown
+    if state.currentInputType ~= inputType and 
+       (currentTime - state.lastInputTypeChange) < state.inputTypeCooldown then
+        return
+    end
+    
     if state.currentInputType ~= inputType then
         state.currentInputType = inputType
+        state.lastInputTypeChange = currentTime
         if state.onInputTypeChanged then
             state.onInputTypeChanged(inputType)
         end
@@ -131,9 +142,31 @@ function InputManager.setOnJoystickDirection(callback)
     state.onJoystickDirection = callback
 end
 
+-- Set key press callback
+function InputManager.setOnKeyPressed(callback)
+    table.insert(state.keyPressCallbacks, callback)
+end
+
+-- Handle key press
+function InputManager.handleKeyPress(key)
+    -- Update input type to keyboard
+    InputManager.updateInputType(INPUT_TYPES.KEYBOARD)
+    
+    -- Reset the last input time for keyboard
+    state.lastInputTime = love.timer.getTime()
+    
+    -- Call all key press callbacks
+    for _, callback in ipairs(state.keyPressCallbacks) do
+        if callback(key) then
+            -- If a callback returns true, it handled the key
+            return
+        end
+    end
+end
+
 -- Keyboard input handlers
 function InputManager.handleKeyPressed(key)
-    InputManager.updateInputType(INPUT_TYPES.KEYBOARD)
+    InputManager.handleKeyPress(key)
 end
 
 function InputManager.handleKeyReleased(key)
@@ -183,6 +216,19 @@ end
 -- Helper function to get the last time an input type was used
 function InputManager.getLastInputTime(inputType)
     return state.lastInput[inputType] or 0
+end
+
+-- Set callback for gamepad button press
+function InputManager.setOnGamepadPress(callback)
+    state.onGamepadPress = callback
+end
+
+-- Handle gamepad input
+function InputManager.handleGamepadPress(joystick, button)
+    InputManager.updateInputType(INPUT_TYPES.GAMEPAD)
+    if state.onGamepadPress then
+        state.onGamepadPress(button)
+    end
 end
 
 return InputManager 

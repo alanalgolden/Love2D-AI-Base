@@ -5,6 +5,7 @@ local InputManager = require('src/managers/InputManager')
 local WindowManager = require('src/managers/WindowManager')
 local UIManager = require('src/managers/UIManager')
 local Button = require('src/components/Button')
+local DebugOverlay = require('src/components/DebugOverlay')
 
 -- Game state
 local gameState = {
@@ -12,7 +13,8 @@ local gameState = {
     baseWidth = 1920,
     baseHeight = 1080,
     currentScreen = "menu", -- menu, game, settings
-    buttons = {}
+    buttons = {},
+    debugOverlay = nil
 }
 
 -- Button callbacks
@@ -33,6 +35,11 @@ function love.load()
     WindowManager.initialize()
     InputManager.initialize()
     UIManager.initialize()
+    
+    -- Create debug overlay
+    gameState.debugOverlay = DebugOverlay.new()
+    gameState.debugOverlay:initialize()
+    UIManager.addComponent(gameState.debugOverlay)
     
     -- Create menu buttons
     local buttonWidth = 300
@@ -106,11 +113,6 @@ function love.draw()
     -- Draw UI components
     UIManager.draw()
     
-    -- Draw current input type (for testing)
-    love.graphics.setColor(1, 1, 1)
-    local inputText = "Current Input Type: " .. (gameState.inputType or "None")
-    love.graphics.print(inputText, 10, 10, 0, 1.5)
-    
     -- End drawing
     WindowManager.endDraw()
 end
@@ -123,7 +125,6 @@ end
 -- Input callbacks with coordinate conversion
 function love.keypressed(key)
     InputManager.handleKeyPressed(key)
-    UIManager.handleKeyPress(key)
 end
 
 function love.keyreleased(key)

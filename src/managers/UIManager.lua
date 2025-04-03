@@ -30,6 +30,16 @@ function UIManager.initialize()
         UIManager.handleInputTypeChange(inputType)
     end)
     
+    -- Set up key press listener
+    InputManager.setOnKeyPressed(function(key)
+        UIManager.handleKeyPress(key)
+    end)
+    
+    -- Set up gamepad button press listener
+    InputManager.setOnGamepadPress(function(button)
+        UIManager.handleGamepadPress(button)
+    end)
+    
     -- Set up joystick direction listener
     InputManager.setOnJoystickDirection(function(direction)
         UIManager.handleJoystickDirection(direction)
@@ -38,20 +48,25 @@ end
 
 -- Handle input type changes
 function UIManager.handleInputTypeChange(inputType)
+    print("UIManager: Input type changed to:", inputType)
     state.currentInputType = inputType
     
     -- Clear focus when switching to mouse/touch
     if inputType == "mouse" or inputType == "touch" then
+        print("UIManager: Switching to mouse/touch, clearing focus")
         UIManager.clearFocus()
         UIManager.setNavigationEnabled(false)
     else
         -- Enable navigation for keyboard/gamepad
+        print("UIManager: Switching to keyboard/gamepad, enabling navigation")
         UIManager.setNavigationEnabled(true)
         
         -- Set initial focus if none exists
         if not state.focusedComponent then
+            print("UIManager: Setting initial focus")
             for _, component in ipairs(state.components) do
                 if component.isFocusable and component:isFocusable() then
+                    print("UIManager: Found focusable component for initial focus")
                     UIManager.setFocusedComponent(component)
                     break
                 end
@@ -174,16 +189,39 @@ end
 
 -- Handle keyboard input
 function UIManager.handleKeyPress(key)
-    -- Only handle keyboard input for keyboard input type
-    if state.currentInputType ~= "keyboard" then
+    -- Debug print
+    print("UIManager: Received key press:", key)
+    print("UIManager: Current input type:", state.currentInputType)
+    print("UIManager: Navigation enabled:", state.navigationEnabled)
+    print("UIManager: Focused component:", state.focusedComponent and "yes" or "no")
+    
+    -- Only handle navigation if enabled
+    if not state.navigationEnabled then
+        print("UIManager: Navigation is disabled")
         return
     end
     
-    if not state.navigationEnabled then return end
-    
     -- Handle navigation keys
     if key == "up" or key == "down" or key == "left" or key == "right" then
-        UIManager.navigate(key)
+        -- Ensure we have a focused component before navigating
+        if not state.focusedComponent then
+            print("UIManager: No focused component, finding first focusable")
+            -- Find first focusable component
+            for _, component in ipairs(state.components) do
+                if component.isFocusable and component:isFocusable() then
+                    print("UIManager: Found focusable component")
+                    UIManager.setFocusedComponent(component)
+                    break
+                end
+            end
+        end
+        
+        if state.focusedComponent then
+            print("UIManager: Navigating in direction:", key)
+            UIManager.navigate(key)
+        else
+            print("UIManager: No focusable components found")
+        end
     else
         -- Handle other keys for focused component
         if state.focusedComponent and state.focusedComponent.onKeyPress then
@@ -194,27 +232,8 @@ end
 
 -- Handle gamepad input
 function UIManager.handleGamepadPress(button)
-    -- Only handle gamepad input for gamepad input type
-    if state.currentInputType ~= "gamepad" then
-        return
-    end
-    
-    if not state.navigationEnabled then return end
-    
-    -- Handle navigation buttons
-    if button == "dpup" then
-        UIManager.navigate("up")
-    elseif button == "dpdown" then
-        UIManager.navigate("down")
-    elseif button == "dpleft" then
-        UIManager.navigate("left")
-    elseif button == "dpright" then
-        UIManager.navigate("right")
-    else
-        -- Handle other buttons for focused component
-        if state.focusedComponent and state.focusedComponent.onGamepadPress then
-            state.focusedComponent:onGamepadPress(button)
-        end
+    if state.focusedComponent and state.focusedComponent.onGamepadPress then
+        state.focusedComponent:onGamepadPress(button)
     end
 end
 
