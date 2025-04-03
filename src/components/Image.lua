@@ -6,6 +6,7 @@ Image.__index = Image
 
 -- Fallback image for when requested images can't be loaded
 local fallbackImage = nil
+local fallbackFont = nil
 
 function Image.new(path, x, y, width, height)
     local self = setmetatable({}, Image)
@@ -17,12 +18,28 @@ function Image.new(path, x, y, width, height)
     
     if success then
         self.image = image
+        self.useTextFallback = false
     else
-        -- If fallback image hasn't been created yet, create it
-        if not fallbackImage then
-            fallbackImage = love.graphics.newImage("assets/images/notfound.png")
+        -- Try to load the notfound image
+        local notFoundSuccess, notFoundImg = pcall(function()
+            return love.graphics.newImage("assets/images/notfound.png")
+        end)
+        
+        if notFoundSuccess then
+            if not fallbackImage then
+                fallbackImage = notFoundImg
+            end
+            self.image = fallbackImage
+            self.useTextFallback = false
+        else
+            -- If both image loads fail, use text fallback
+            self.image = nil
+            self.useTextFallback = true
+            if not fallbackFont then
+                fallbackFont = love.graphics.newFont(24)
+            end
+            self.fallbackText = "Image not found"
         end
-        self.image = fallbackImage
         -- Log the error for debugging
         print(string.format("Failed to load image: %s", path))
     end
@@ -30,8 +47,8 @@ function Image.new(path, x, y, width, height)
     -- Position and dimensions
     self.x = x or 0
     self.y = y or 0
-    self.width = width or self.image:getWidth()
-    self.height = height or self.image:getHeight()
+    self.width = width or (self.image and self.image:getWidth() or 200)
+    self.height = height or (self.image and self.image:getHeight() or 100)
     
     -- Optional properties
     self.rotation = 0
@@ -56,17 +73,39 @@ function Image:draw()
     local r, g, b, a = love.graphics.getColor()
     love.graphics.setColor(r, g, b, self.alpha)
     
-    -- Draw the image
-    love.graphics.draw(
-        self.image,
-        self.x,
-        self.y,
-        self.rotation,
-        self.scaleX,
-        self.scaleY,
-        self.width / 2,
-        self.height / 2
-    )
+    if self.useTextFallback then
+        -- Draw text fallback
+        love.graphics.setFont(fallbackFont)
+        local textWidth = fallbackFont:getWidth(self.fallbackText)
+        local textHeight = fallbackFont:getHeight()
+        local textX = self.x - textWidth/2
+        local textY = self.y - textHeight/2
+        
+        -- Draw background rectangle
+        love.graphics.setColor(0.2, 0.2, 0.2, self.alpha)
+        love.graphics.rectangle("fill", 
+            self.x - self.width/2, 
+            self.y - self.height/2, 
+            self.width, 
+            self.height
+        )
+        
+        -- Draw text
+        love.graphics.setColor(1, 1, 1, self.alpha)
+        love.graphics.print(self.fallbackText, textX, textY)
+    else
+        -- Draw the image
+        love.graphics.draw(
+            self.image,
+            self.x,
+            self.y,
+            self.rotation,
+            self.scaleX,
+            self.scaleY,
+            self.width / 2,
+            self.height / 2
+        )
+    end
     
     -- Restore the graphics state
     love.graphics.pop()
