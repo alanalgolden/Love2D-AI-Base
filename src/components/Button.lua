@@ -55,6 +55,12 @@ function Button.new(x, y, width, height, text, onClick)
     return self
 end
 
+-- Check if a point is inside the button
+function Button:isPointInside(x, y)
+    return x >= self.x and x <= self.x + self.width and
+           y >= self.y and y <= self.y + self.height
+end
+
 -- Update button state
 function Button:update(dt)
     -- Add any animation or state updates here
@@ -103,12 +109,6 @@ function Button:draw()
     
     -- Restore graphics state
     love.graphics.pop()
-end
-
--- Check if a point is inside the button
-function Button:isPointInside(x, y)
-    return x >= self.x and x <= self.x + self.width and
-           y >= self.y and y <= self.y + self.height
 end
 
 -- Event handlers

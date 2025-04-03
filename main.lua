@@ -5,6 +5,7 @@ local InputManager = require('src/managers/InputManager')
 local WindowManager = require('src/managers/WindowManager')
 local UIManager = require('src/managers/UIManager')
 local Button = require('src/components/Button')
+local Image = require('src/components/Image')
 local DebugOverlay = require('src/components/DebugOverlay')
 local Logger = require('src/utils/logger')
 
@@ -15,7 +16,8 @@ local gameState = {
     baseHeight = 1080,
     currentScreen = "menu", -- menu, game, settings
     buttons = {},
-    debugOverlay = nil
+    debugOverlay = nil,
+    logo = nil
 }
 
 -- Button callbacks
@@ -48,14 +50,18 @@ function love.load()
     gameState.debugOverlay:initialize()
     UIManager.addComponent(gameState.debugOverlay)
     
+    -- Create logo
+    gameState.logo = Image.new("assets/images/logo.png", gameState.baseWidth / 2, 200, 400, 200)
+    UIManager.addComponent(gameState.logo)
+    
     -- Create menu buttons
     local buttonWidth = 300
     local buttonHeight = 60
     local buttonSpacing = 20
-    local startY = gameState.baseHeight / 2 - (buttonHeight * 3 + buttonSpacing * 2) / 2
+    local startY = gameState.baseHeight / 2
     
     -- Start Game button
-    gameState.buttons.startGame = Button.new(
+    local startButton = Button.new(
         gameState.baseWidth / 2 - buttonWidth / 2,
         startY,
         buttonWidth,
@@ -63,9 +69,11 @@ function love.load()
         "Start Game",
         onStartGame
     )
+    table.insert(gameState.buttons, startButton)
+    UIManager.addComponent(startButton)
     
     -- Settings button
-    gameState.buttons.settings = Button.new(
+    local settingsButton = Button.new(
         gameState.baseWidth / 2 - buttonWidth / 2,
         startY + buttonHeight + buttonSpacing,
         buttonWidth,
@@ -73,9 +81,11 @@ function love.load()
         "Settings",
         onSettings
     )
+    table.insert(gameState.buttons, settingsButton)
+    UIManager.addComponent(settingsButton)
     
     -- Quit button
-    gameState.buttons.quit = Button.new(
+    local quitButton = Button.new(
         gameState.baseWidth / 2 - buttonWidth / 2,
         startY + (buttonHeight + buttonSpacing) * 2,
         buttonWidth,
@@ -83,20 +93,17 @@ function love.load()
         "Quit",
         onQuit
     )
+    table.insert(gameState.buttons, quitButton)
+    UIManager.addComponent(quitButton)
     
     -- Set up navigation
-    gameState.buttons.startGame:setNavigation("down", gameState.buttons.settings)
-    gameState.buttons.settings:setNavigation("up", gameState.buttons.startGame)
-    gameState.buttons.settings:setNavigation("down", gameState.buttons.quit)
-    gameState.buttons.quit:setNavigation("up", gameState.buttons.settings)
-    
-    -- Add buttons to UI manager
-    UIManager.addComponent(gameState.buttons.startGame)
-    UIManager.addComponent(gameState.buttons.settings)
-    UIManager.addComponent(gameState.buttons.quit)
+    startButton:setNavigation("down", settingsButton)
+    settingsButton:setNavigation("up", startButton)
+    settingsButton:setNavigation("down", quitButton)
+    quitButton:setNavigation("up", settingsButton)
     
     -- Set initial focus
-    UIManager.setFocusedComponent(gameState.buttons.startGame)
+    UIManager.setFocusedComponent(startButton)
     
     Logger.info("Game initialization complete")
 end
