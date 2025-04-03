@@ -1,16 +1,7 @@
 -- InputManager.lua
--- This module handles all input types (keyboard, mouse, gamepad, touch)
--- and manages switching between them based on the last used input method
+-- Manages input types and their state
 
 local InputManager = {}
-
--- Input types
-local INPUT_TYPES = {
-    KEYBOARD = "keyboard",
-    MOUSE = "mouse",
-    GAMEPAD = "gamepad",
-    TOUCH = "touch"
-}
 
 -- State
 local state = {
@@ -22,8 +13,28 @@ local state = {
         mouse = 0,
         gamepad = 0,
         touch = 0
-    }
+    },
+    onInputTypeChanged = nil, -- Callback for input type changes
+    joystickDeadzone = 0.5,   -- Minimum value for joystick movement
+    lastJoystickDirection = nil,
+    joystickRepeatDelay = 0.2, -- Delay between joystick navigation events
+    lastJoystickTime = 0
 }
+
+-- Input types
+local INPUT_TYPES = {
+    KEYBOARD = "keyboard",
+    MOUSE = "mouse",
+    GAMEPAD = "gamepad",
+    TOUCH = "touch"
+}
+
+-- Helper function to update input type
+function InputManager.updateInputType(inputType)
+    InputManager.setInputType(inputType)
+    state.lastInputTime = love.timer.getTime()
+    state.lastInput[inputType] = state.lastInputTime
+end
 
 -- Initialize the input manager
 function InputManager.initialize()
@@ -39,7 +50,59 @@ function InputManager.update(dt)
     
     -- Check if current input type has timed out
     if state.currentInputType and (currentTime - state.lastInputTime) > state.inputTimeout then
-        state.currentInputType = nil
+        InputManager.setInputType(nil)
+    end
+    
+    -- Always check for joystick movement, regardless of current input type
+    InputManager.handleJoystickMovement(dt)
+end
+
+-- Handle joystick movement
+function InputManager.handleJoystickMovement(dt)
+    local currentTime = love.timer.getTime()
+    
+    -- Get the first connected joystick
+    local joystick = love.joystick.getJoysticks()[1]
+    if not joystick then return end
+    
+    -- Get left stick values
+    local axisX = joystick:getAxis(1)
+    local axisY = joystick:getAxis(2)
+    
+    -- Check if joystick is moved beyond deadzone
+    if math.abs(axisX) > state.joystickDeadzone or math.abs(axisY) > state.joystickDeadzone then
+        -- Update input type to gamepad if not already set
+        if state.currentInputType ~= INPUT_TYPES.GAMEPAD then
+            InputManager.updateInputType(INPUT_TYPES.GAMEPAD)
+        end
+        
+        -- Determine direction based on axis values
+        local direction = nil
+        if math.abs(axisX) > state.joystickDeadzone then
+            direction = axisX > 0 and "right" or "left"
+        elseif math.abs(axisY) > state.joystickDeadzone then
+            direction = axisY > 0 and "down" or "up"
+        end
+        
+        -- Handle direction change or repeat
+        if direction then
+            if direction ~= state.lastJoystickDirection then
+                -- New direction, trigger immediately
+                state.lastJoystickDirection = direction
+                state.lastJoystickTime = currentTime
+                if state.onJoystickDirection then
+                    state.onJoystickDirection(direction)
+                end
+            elseif currentTime - state.lastJoystickTime > state.joystickRepeatDelay then
+                -- Same direction, repeat after delay
+                state.lastJoystickTime = currentTime
+                if state.onJoystickDirection then
+                    state.onJoystickDirection(direction)
+                end
+            end
+        end
+    else
+        state.lastJoystickDirection = nil
     end
 end
 
@@ -48,16 +111,29 @@ function InputManager.getCurrentInputType()
     return state.currentInputType
 end
 
--- Helper function to update input type
-local function updateInputType(inputType)
-    state.currentInputType = inputType
-    state.lastInputTime = love.timer.getTime()
-    state.lastInput[inputType] = state.lastInputTime
+-- Set the current input type and notify listeners
+function InputManager.setInputType(inputType)
+    if state.currentInputType ~= inputType then
+        state.currentInputType = inputType
+        if state.onInputTypeChanged then
+            state.onInputTypeChanged(inputType)
+        end
+    end
+end
+
+-- Set callback for input type changes
+function InputManager.setOnInputTypeChanged(callback)
+    state.onInputTypeChanged = callback
+end
+
+-- Set callback for joystick direction changes
+function InputManager.setOnJoystickDirection(callback)
+    state.onJoystickDirection = callback
 end
 
 -- Keyboard input handlers
 function InputManager.handleKeyPressed(key)
-    updateInputType(INPUT_TYPES.KEYBOARD)
+    InputManager.updateInputType(INPUT_TYPES.KEYBOARD)
 end
 
 function InputManager.handleKeyReleased(key)
@@ -66,7 +142,7 @@ end
 
 -- Mouse input handlers
 function InputManager.handleMousePressed(x, y, button)
-    updateInputType(INPUT_TYPES.MOUSE)
+    InputManager.updateInputType(INPUT_TYPES.MOUSE)
 end
 
 function InputManager.handleMouseReleased(x, y, button)
@@ -74,12 +150,12 @@ function InputManager.handleMouseReleased(x, y, button)
 end
 
 function InputManager.handleMouseMoved(x, y, dx, dy)
-    updateInputType(INPUT_TYPES.MOUSE)
+    InputManager.updateInputType(INPUT_TYPES.MOUSE)
 end
 
 -- Gamepad input handlers
 function InputManager.handleGamepadPressed(joystick, button)
-    updateInputType(INPUT_TYPES.GAMEPAD)
+    InputManager.updateInputType(INPUT_TYPES.GAMEPAD)
 end
 
 function InputManager.handleGamepadReleased(joystick, button)
@@ -88,7 +164,7 @@ end
 
 -- Touch input handlers
 function InputManager.handleTouchPressed(id, x, y, pressure)
-    updateInputType(INPUT_TYPES.TOUCH)
+    InputManager.updateInputType(INPUT_TYPES.TOUCH)
 end
 
 function InputManager.handleTouchReleased(id, x, y, pressure)
@@ -96,7 +172,7 @@ function InputManager.handleTouchReleased(id, x, y, pressure)
 end
 
 function InputManager.handleTouchMoved(id, x, y, pressure)
-    updateInputType(INPUT_TYPES.TOUCH)
+    InputManager.updateInputType(INPUT_TYPES.TOUCH)
 end
 
 -- Helper function to check if a specific input type is active
