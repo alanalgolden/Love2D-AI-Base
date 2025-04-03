@@ -1,62 +1,90 @@
-# Love2D Input Manager Project
+# Elemental Transmutation 2
 
-This is a base project for building games with Love2D, featuring a robust input management system that handles keyboard, mouse, gamepad, and touch inputs.
-
-## Project Structure
-
-```
-.
-├── main.lua              # Main entry point
-├── src/
-│   └── managers/
-│       └── InputManager.lua  # Input management system
-└── README.md            # This file
-```
+A game built with LÖVE (Love2D) engine, focusing on elemental manipulation and puzzle-solving.
 
 ## Features
 
-- Automatic input type detection and switching
-- Support for all Love2D input methods:
+### Input System
+- Multi-input support:
   - Keyboard
   - Mouse
-  - Gamepad/Controller
   - Touch
-- Input type timeout system (5 seconds of inactivity)
-- Visual feedback of current input type
-- Clean, modular code structure
+  - Gamepad (with both D-pad and analog stick support)
+- Smart input type detection and switching
+- Input timeout system to handle inactive periods
+- Joystick deadzone and repeat delay for smooth navigation
 
-## Requirements
+### UI System
+- Component-based architecture
+- Responsive button system with:
+  - Hover effects
+  - Click/tap handling
+  - Focus management
+  - Keyboard/gamepad navigation
+- Cross-platform scaling and resolution handling
 
-- Love2D 11.0 or higher
-- Lua 5.1 or higher
+### Project Structure
+```
+elementaltransmutation2/
+├── main.lua              # Main game entry point
+├── src/
+│   ├── components/       # UI components
+│   │   └── Button.lua   # Button component
+│   └── managers/        # Game systems
+│       ├── InputManager.lua    # Input handling
+│       ├── UIManager.lua       # UI management
+│       └── WindowManager.lua   # Window and scaling
+└── README.md
+```
 
-## Running the Project
+## Technical Details
 
-1. Install Love2D from https://love2d.org/
-2. Clone this repository
-3. Run the project using one of these methods:
-   - Drag the project folder onto the Love2D executable
-   - Run `love .` from the project directory
-   - Use your IDE's Love2D integration
+### Input Management
+The game uses a sophisticated input management system that:
+- Automatically detects and switches between input types
+- Maintains input state with timeout handling
+- Provides smooth joystick navigation with configurable deadzone
+- Supports both digital (D-pad) and analog (joystick) input
 
-## Testing Input Methods
+### UI Components
+The UI system is built on a component-based architecture:
+- Components are self-contained and reusable
+- Support for multiple input types
+- Built-in focus and navigation system
+- Responsive to different screen sizes
 
-The project includes a test window that displays the current input type and instructions for testing each input method:
+### Window Management
+The window system handles:
+- Cross-platform resolution scaling
+- Aspect ratio maintenance
+- Responsive UI positioning
 
-1. Press any key to test keyboard input
-2. Move the mouse to test mouse input
-3. Connect a controller to test gamepad input
-4. Touch the screen to test touch input
+## Development
 
-## Development Notes
+### Prerequisites
+- LÖVE (Love2D) engine
+- Lua 5.1 or later
 
-- The input manager automatically switches between input types based on the last used method
-- Input types remain active for 5 seconds after the last input
-- The project structure is designed to be easily extensible for adding new features
+### Building
+To create a `.love` file for distribution:
+```bash
+zip -r game.love main.lua src/ README.md
+```
 
-## Future Improvements
+### Testing
+The game can be tested on various platforms:
+- Desktop (Windows, macOS, Linux)
+- Mobile (Android, iOS)
+- Different input methods (keyboard, mouse, touch, gamepad)
 
-- Add input mapping system
-- Implement input recording and playback
-- Add support for multiple simultaneous input types
-- Create input visualization tools 
+## Future Development
+- Additional UI components
+- Game-specific features
+- Enhanced input handling
+- Performance optimizations
+
+## License
+[Your chosen license]
+
+## Contributing
+[Your contribution guidelines] 
