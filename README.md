@@ -4,6 +4,14 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
 
 ## Features
 
+- **Game Engine**
+  - Component-based entity system
+  - Scene management for different game states
+  - Run management for tracking game sessions
+  - State management for game variables
+  - Seed-based randomization for reproducible gameplay
+  - Save/load functionality for game progress
+
 - **Input System**
   - Supports multiple input types (keyboard, mouse, gamepad, touch)
   - Automatic input type detection and switching
@@ -35,10 +43,89 @@ game-template/
 │   └── shaders/        # Custom shaders
 ├── src/
 │   ├── components/     # UI and game components
+│   ├── engine/         # Core game engine systems
 │   ├── managers/       # System managers (input, UI, etc.)
+│   ├── scenes/         # Game scenes (menu, game, settings)
 │   └── utils/          # Utility functions and helpers
 ├── main.lua           # Main game entry point
 └── README.md          # This file
+```
+
+## Game Engine
+
+The template includes a robust game engine with the following features:
+
+### Entity Component System
+
+The engine uses an entity-component system for flexible game object creation:
+
+```lua
+local Entity = require('src/engine/Entity')
+local Component = require('src/engine/Component')
+
+-- Create an entity
+local player = Entity.new("player", "Player")
+
+-- Add components
+player:addComponent({
+    type = "position",
+    x = 100,
+    y = 100
+})
+
+player:addComponent({
+    type = "velocity",
+    x = 0,
+    y = 0
+})
+
+-- Get a component
+local position = player:getComponent("position")
+position.x = 200
+```
+
+### Scene Management
+
+Scenes manage different game states (menu, gameplay, settings):
+
+```lua
+local SceneManager = require('src/engine/SceneManager')
+
+-- Register scenes
+SceneManager.registerScene("menu", MenuScene)
+SceneManager.registerScene("game", GameScene)
+SceneManager.registerScene("settings", SettingsScene)
+
+-- Set current scene
+SceneManager.setScene("menu")
+```
+
+### Run Management
+
+The RunManager tracks game sessions and progress:
+
+```lua
+local RunManager = require('src/engine/RunManager')
+
+-- Start a new run
+RunManager.startNewRun()
+
+-- End current run
+RunManager.endCurrentRun()
+```
+
+### State Management
+
+The StateManager handles game variables and state:
+
+```lua
+local StateManager = require('src/engine/StateManager')
+
+-- Set a state variable
+StateManager.setState("score", 100)
+
+-- Get a state variable
+local score = StateManager.getState("score")
 ```
 
 ## Asset Handling
@@ -96,6 +183,23 @@ logo:setAlpha(0.8)
 1. Create a new component file in `src/components/`
 2. Follow the existing component patterns
 3. Register the component with the UIManager if it needs input handling
+
+### Creating New Scenes
+
+1. Create a new scene file in `src/scenes/`
+2. Inherit from the base Scene class
+3. Implement the required methods (initialize, update, draw, cleanup)
+4. Register the scene with the SceneManager
+
+### Building the Game
+
+To build the game into a .love file:
+
+```bash
+lua build.lua
+```
+
+This will create a `game-template.love` file that can be distributed.
 
 ## License
 
