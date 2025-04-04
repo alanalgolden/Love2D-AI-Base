@@ -18,7 +18,8 @@ local state = {
     offsetY = 0,
     isFullscreen = false,
     isMobile = false,
-    isSwitch = false
+    isSwitch = false,
+    isPC = false
 }
 
 -- Initialize the window manager
@@ -26,6 +27,7 @@ function WindowManager.initialize()
     -- Detect platform
     state.isMobile = love.system.getOS() == "Android" or love.system.getOS() == "iOS"
     state.isSwitch = love.system.getOS() == "Switch"
+    state.isPC = love.system.getOS() == "Windows" or love.system.getOS() == "OS X" or love.system.getOS() == "Linux"
     
     -- Set initial window mode based on platform
     if state.isMobile or state.isSwitch then
@@ -42,7 +44,7 @@ function WindowManager.initialize()
     end
     
     -- Set window title
-    love.window.setTitle("Elemental Transmutation")
+    love.window.setTitle("Game Template")
     
     -- Initial resize
     WindowManager.resize(love.graphics.getWidth(), love.graphics.getHeight())
@@ -114,12 +116,46 @@ function WindowManager.isSwitch()
     return state.isSwitch
 end
 
--- Toggle fullscreen (desktop only)
+-- Toggle fullscreen mode
 function WindowManager.toggleFullscreen()
-    if not state.isMobile and not state.isSwitch then
-        state.isFullscreen = not state.isFullscreen
-        love.window.setFullscreen(state.isFullscreen)
+    -- Only allow fullscreen toggling on PC platforms
+    if not state.isPC then
+        local Logger = require('src/utils/logger')
+        Logger.info("Fullscreen toggling not supported on this platform")
+        return
     end
+    
+    -- Toggle fullscreen state
+    state.isFullscreen = not state.isFullscreen
+    
+    -- Apply fullscreen setting
+    love.window.setFullscreen(state.isFullscreen)
+    
+    -- If not fullscreen, restore to minimum size
+    if not state.isFullscreen then
+        love.window.setMode(MIN_WIDTH, MIN_HEIGHT, {
+            resizable = true,
+            minwidth = MIN_WIDTH,
+            minheight = MIN_HEIGHT
+        })
+    end
+    
+    -- Update dimensions
+    WindowManager.resize(love.graphics.getWidth(), love.graphics.getHeight())
+    
+    -- Log the change
+    local Logger = require('src/utils/logger')
+    Logger.info("Window fullscreen toggled: " .. (state.isFullscreen and "on" or "off"))
+end
+
+-- Get fullscreen state
+function WindowManager.isFullscreen()
+    return state.isFullscreen
+end
+
+-- Check if running on PC
+function WindowManager.isPC()
+    return state.isPC
 end
 
 return WindowManager 
