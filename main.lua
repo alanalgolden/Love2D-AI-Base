@@ -10,9 +10,9 @@ local Logger = require('src/utils/logger')
 
 -- Import Game Engine
 local GameEngine = require('src/engine/GameEngine')
-local RunManager = require('src/engine/RunManager')
-local StateManager = require('src/engine/StateManager')
-local SceneManager = require('src/engine/SceneManager')
+local RunManager = require('src/managers/RunManager')
+local StateManager = require('src/managers/StateManager')
+local SceneManager = require('src/managers/SceneManager')
 
 -- Import Scenes
 local ProfileScene = require('src/scenes/ProfileScene')
@@ -241,7 +241,7 @@ end
 function love.focus(focused)
     -- Get current scene
     local success, err = pcall(function()
-        local SceneManager = require('src/engine/SceneManager')
+        local SceneManager = require('src/managers/SceneManager')
         local currentScene = SceneManager.getCurrentScene()
         
         if currentScene then

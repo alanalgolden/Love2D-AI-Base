@@ -8,6 +8,7 @@ local UIManager = require('src/managers/UIManager')
 local WindowManager = require('src/managers/WindowManager')
 local ProfileManager = require('src/managers/ProfileManager')
 local Logger = require('src/utils/logger')
+local SceneManager = require('src/managers/SceneManager')
 
 local SettingsScene = {}
 SettingsScene.__index = SettingsScene
@@ -21,7 +22,7 @@ function SettingsScene.new()
     self.buttons = {}
     self.uiComponents = {}
     self.settings = {
-        fullscreen = false
+        fullscreen = WindowManager.isFullscreen()
     }
     
     -- Confirmation dialog properties
@@ -70,7 +71,7 @@ function SettingsScene:createUI()
         buttonHeight,
         "Back",
         function()
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             SceneManager.setScene("menu")
         end
     )
@@ -86,11 +87,10 @@ function SettingsScene:createUI()
             startY + buttonHeight + buttonSpacing,
             buttonWidth,
             buttonHeight,
-            "Fullscreen: " .. (self.settings.fullscreen and "On" or "Off"),
+            "Fullscreen: " .. (WindowManager.isFullscreen() and "On" or "Off"),
             function()
-                self.settings.fullscreen = not self.settings.fullscreen
+                self.settings.fullscreen = WindowManager.toggleFullscreen()
                 self:updateFullscreenButtonText()
-                WindowManager.toggleFullscreen()
             end
         )
         fullscreenButton:setTextPadding(20, 10)  -- Add proper padding for text
@@ -179,7 +179,7 @@ function SettingsScene:showResetConfirmation()
         function()
             self:resetProgress()
             -- Return to profile menu after reset
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             -- Clean up this scene first
             self:cleanup()
             -- Then set the new scene
@@ -274,7 +274,7 @@ end
 function SettingsScene:updateFullscreenButtonText()
     for _, button in ipairs(self.buttons) do
         if button.text and button.text:find("Fullscreen:") then
-            button:setText("Fullscreen: " .. (self.settings.fullscreen and "On" or "Off"))
+            button:setText("Fullscreen: " .. (WindowManager.isFullscreen() and "On" or "Off"))
             break
         end
     end
@@ -312,7 +312,7 @@ function SettingsScene:keypressed(key)
         if self.confirmationDialog then
             self:hideResetConfirmation()
         else
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             SceneManager.setScene("menu")
         end
         return

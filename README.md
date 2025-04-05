@@ -154,7 +154,7 @@ end
 Scenes manage different game states (menu, gameplay, settings):
 
 ```lua
-local SceneManager = require('src/engine/SceneManager')
+local SceneManager = require('src/managers/SceneManager')
 
 -- Register scenes
 SceneManager.registerScene("profile", ProfileScene)

@@ -5,10 +5,11 @@ local Scene = require('src/engine/Scene')
 local Entity = require('src/engine/Entity')
 local Component = require('src/engine/Component')
 local System = require('src/engine/System')
-local RunManager = require('src/engine/RunManager')
+local RunManager = require('src/managers/RunManager')
 local Logger = require('src/utils/logger')
 local Button = require('src/components/Button')
 local UIManager = require('src/managers/UIManager')
+local SceneManager = require('src/managers/SceneManager')
 
 local GameScene = {}
 GameScene.__index = GameScene
@@ -632,7 +633,7 @@ function GameScene:gameOver()
     Scene.cleanup(self)
     
     -- Return to menu
-    local SceneManager = require('src/engine/SceneManager')
+    local SceneManager = require('src/managers/SceneManager')
     SceneManager.setScene("menu")
 end
 

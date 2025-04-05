@@ -36,6 +36,7 @@ function WindowManager.initialize()
         love.window.setFullscreen(true)
     else
         -- On desktop, use windowed mode with minimum size
+        state.isFullscreen = false
         love.window.setMode(MIN_WIDTH, MIN_HEIGHT, {
             resizable = true,
             minwidth = MIN_WIDTH,
@@ -146,6 +147,8 @@ function WindowManager.toggleFullscreen()
     -- Log the change
     local Logger = require('src/utils/logger')
     Logger.info("Window fullscreen toggled: " .. (state.isFullscreen and "on" or "off"))
+    
+    return state.isFullscreen
 end
 
 -- Get fullscreen state

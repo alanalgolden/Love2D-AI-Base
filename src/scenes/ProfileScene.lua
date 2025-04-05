@@ -7,6 +7,7 @@ local UIManager = require('src/managers/UIManager')
 local ProfileManager = require('src/managers/ProfileManager')
 local Logger = require('src/utils/logger')
 local Text = require('src/components/Text')
+local SceneManager = require('src/managers/SceneManager')
 
 local ProfileScene = {}
 ProfileScene.__index = ProfileScene
@@ -84,13 +85,13 @@ function ProfileScene:createProfileSlot(id, x, y, width, height)
         if profile then
             -- Select existing profile
             ProfileManager.setCurrentProfile(id)
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             SceneManager.setScene("menu")
         else
             -- Create new profile
             if ProfileManager.createProfile(id) then
                 ProfileManager.setCurrentProfile(id)
-                local SceneManager = require('src/engine/SceneManager')
+                local SceneManager = require('src/managers/SceneManager')
                 SceneManager.setScene("menu")
             else
                 Logger.error("Failed to create profile " .. id)

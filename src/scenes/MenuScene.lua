@@ -7,6 +7,8 @@ local Image = require('src/components/Image')
 local UIManager = require('src/managers/UIManager')
 local ProfileManager = require('src/managers/ProfileManager')
 local Logger = require('src/utils/logger')
+local SceneManager = require('src/managers/SceneManager')
+local RunManager = require('src/managers/RunManager')
 
 local MenuScene = {}
 MenuScene.__index = MenuScene
@@ -29,7 +31,7 @@ function MenuScene:initialize()
     -- Check if a profile is selected
     if not ProfileManager.getCurrentProfile() then
         Logger.warning("No profile selected, returning to profile selection")
-        local SceneManager = require('src/engine/SceneManager')
+        local SceneManager = require('src/managers/SceneManager')
         SceneManager.setScene("profile")
         return
     end
@@ -65,11 +67,11 @@ function MenuScene:createUI()
                 difficulty = "normal",
                 characterClass = "warrior"
             }
-            local RunManager = require('src/engine/RunManager')
+            local RunManager = require('src/managers/RunManager')
             RunManager.startNewRun(runConfig)
             
             -- Set the game scene
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             SceneManager.setScene("game")
         end
     )
@@ -82,7 +84,7 @@ function MenuScene:createUI()
         810, startY + buttonHeight + buttonSpacing, buttonWidth, buttonHeight, "Settings",
         function()
             -- Set the settings scene
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             SceneManager.setScene("settings")
         end
     )
@@ -95,7 +97,7 @@ function MenuScene:createUI()
         810, startY + (buttonHeight + buttonSpacing) * 2, buttonWidth, buttonHeight, "Change Profile",
         function()
             -- Return to profile selection
-            local SceneManager = require('src/engine/SceneManager')
+            local SceneManager = require('src/managers/SceneManager')
             SceneManager.setScene("profile")
         end
     )
