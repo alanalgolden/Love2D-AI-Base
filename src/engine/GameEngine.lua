@@ -43,7 +43,14 @@ function GameEngine.initialize(config)
     end
     
     -- Initialize random number generator with default seed
-    GameEngine.setSeed(os.time())
+    local function generateSeed()
+        local time = os.time()
+        local micro = love.timer.getTime() * 1000000
+        local random = love.math.random(1, 1000000)
+        return time + math.floor(micro) + random
+    end
+
+    GameEngine.setSeed(generateSeed())
     
     -- Create save directory if it doesn't exist
     love.filesystem.createDirectory(state.config.savePath)

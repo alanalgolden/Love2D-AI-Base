@@ -346,13 +346,27 @@ function GameScene:createUIComponents()
     -- Create counter text
     self.counterText = {
         draw = function()
-            love.graphics.setColor(1, 1, 1)
-            -- Center the counter text
-            local text = "Counter: " .. self.counter
-            local font = love.graphics.getFont()
-            local textWidth = font:getWidth(text) * 2 -- Scale factor of 2
-            local textX = (baseWidth - textWidth) / 2
-            love.graphics.print(text, textX, 50, 0, 2, 2)
+            -- Skip drawing if counter is not initialized
+            if not self.counter then return end
+            
+            -- Use pcall for error handling without logging
+            local success = pcall(function()
+                love.graphics.setColor(1, 1, 1)
+                -- Center the counter text
+                local text = "Counter: " .. tostring(self.counter)
+                local font = love.graphics.getFont()
+                if not font then return end
+                
+                -- Calculate text width without scaling
+                local textWidth = font:getWidth(text)
+                local scale = 2
+                local textX = (baseWidth - (textWidth * scale)) / 2
+                
+                -- Draw text
+                love.graphics.print(text, textX, 50, 0, scale, scale)
+            end)
+            
+            -- Silently handle errors without logging
         end
     }
     table.insert(self.uiComponents, self.counterText)
@@ -364,8 +378,29 @@ function GameScene:createUIComponents()
     local buttonY = 150
     
     self.incrementButton = Button.new(buttonX, buttonY, buttonWidth, buttonHeight, "Increment Counter", function()
-        self.counter = self.counter + 1
-        Logger.info("Counter incremented to: " .. self.counter)
+        -- Add error handling and state management
+        local success, err = pcall(function()
+            -- Ensure counter is initialized
+            if not self.counter then
+                self.counter = 0
+            end
+            
+            -- Increment counter with bounds checking
+            self.counter = math.min(self.counter + 1, 999999)
+            
+            -- Update the counter text safely
+            if not self.counterText or not self.counterText.draw then
+                -- Silently handle missing component without logging
+                return
+            end
+        end)
+        
+        if not success then
+            -- Reset counter to safe state if error occurs
+            self.counter = 0
+            -- Print error to console for debugging
+            print("Error in increment button: " .. tostring(err))
+        end
     end)
     UIManager.addComponent(self.incrementButton)
     table.insert(self.uiComponents, self.incrementButton)
@@ -407,16 +442,37 @@ function GameScene:update(dt)
     
     -- Update UI components
     for _, component in ipairs(self.uiComponents) do
-        if component.update then
+        if component.update and (component.isActive == nil or component:isActive()) then
             component:update(dt)
         end
     end
     
     -- Add game-specific update logic here
     
-    -- Check for game over
-    if self.player:getComponent("health").current <= 0 then
-        self:gameOver()
+    -- Check for game over - only check every 0.5 seconds to reduce overhead
+    if not self.lastHealthCheck then
+        self.lastHealthCheck = 0
+    end
+    
+    self.lastHealthCheck = self.lastHealthCheck + dt
+    if self.lastHealthCheck >= 0.5 then
+        self.lastHealthCheck = 0
+        if self.player and self.player:getComponent("health") and self.player:getComponent("health").current <= 0 then
+            self:gameOver()
+        end
+    end
+    
+    -- Periodically flush logger buffer (every 30 seconds)
+    if not self.lastLoggerFlush then
+        self.lastLoggerFlush = 0
+    end
+    
+    self.lastLoggerFlush = self.lastLoggerFlush + dt
+    if self.lastLoggerFlush >= 30.0 then
+        self.lastLoggerFlush = 0
+        -- Force flush the logger buffer
+        local Logger = require('src/utils/logger')
+        Logger.flush()
     end
 end
 
@@ -501,13 +557,79 @@ end
 
 -- Game over
 function GameScene:gameOver()
-    Logger.info("Game Over! Score: " .. self.score)
+    Logger.info("Game Over! Score: " .. self.counter)
     
-    -- Clean up UI components before ending the run
-    self:cleanup()
+    -- Get current profile and update high score if needed
+    local ProfileManager = require('src/managers/ProfileManager')
+    local currentProfile = ProfileManager.getCurrentProfile()
     
-    -- End the current run
+    if currentProfile then
+        Logger.info("Current profile found: " .. currentProfile.id)
+        
+        -- Ensure progress table exists
+        if not currentProfile.progress then
+            currentProfile.progress = { highScore = 0 }
+        end
+        
+        -- Ensure highScore field exists
+        if currentProfile.progress.highScore == nil then
+            currentProfile.progress.highScore = 0
+        end
+        
+        -- Ensure unlockedLevels field exists
+        if not currentProfile.progress.unlockedLevels then
+            currentProfile.progress.unlockedLevels = {1}
+        end
+        
+        -- Ensure totalPlayTime field exists
+        if currentProfile.progress.totalPlayTime == nil then
+            currentProfile.progress.totalPlayTime = 0
+        end
+        
+        Logger.info("Current high score: " .. currentProfile.progress.highScore)
+        
+        if self.counter > currentProfile.progress.highScore then
+            Logger.info("New high score achieved: " .. self.counter)
+            
+            -- Create a new profile data with updated high score
+            local updatedProfile = {
+                id = currentProfile.id,
+                name = currentProfile.name,
+                created = currentProfile.created,
+                lastPlayed = os.time(),
+                settings = currentProfile.settings or {},
+                progress = {
+                    unlockedLevels = currentProfile.progress.unlockedLevels,
+                    highScore = self.counter,
+                    totalPlayTime = currentProfile.progress.totalPlayTime
+                }
+            }
+            
+            -- Update and save the profile
+            local success = ProfileManager.updateProfile(currentProfile.id, updatedProfile)
+            if success then
+                Logger.info("Successfully updated profile with new high score")
+            else
+                Logger.error("Failed to update profile with new high score")
+            end
+        else
+            Logger.info("Score " .. self.counter .. " is not higher than current high score " .. currentProfile.progress.highScore)
+        end
+    else
+        Logger.error("No current profile found when trying to update high score")
+    end
+    
+    -- End the current run first
     RunManager.endCurrentRun()
+    
+    -- Clean up UI components
+    for _, component in ipairs(self.uiComponents) do
+        UIManager.removeComponent(component)
+    end
+    self.uiComponents = {}
+    
+    -- Call parent cleanup
+    Scene.cleanup(self)
     
     -- Return to menu
     local SceneManager = require('src/engine/SceneManager')
@@ -519,14 +641,112 @@ function GameScene:cleanup()
     -- Remove UI components first
     for _, component in ipairs(self.uiComponents) do
         -- Use UIManager's removeComponent method directly
-        UIManager.removeComponent(component)
+        if component then
+            UIManager.removeComponent(component)
+        end
     end
     self.uiComponents = {}
+    
+    -- Reset counter state
+    self.counter = 0
+    self.counterText = nil
+    self.incrementButton = nil
+    self.endGameButton = nil
     
     -- Call parent cleanup
     Scene.cleanup(self)
     
     -- Add game-specific cleanup logic here
+end
+
+-- Handle mouse press
+function GameScene:mousepressed(x, y, button)
+    -- Let UIManager handle UI interactions first
+    local UIManager = require('src/managers/UIManager')
+    if UIManager.handlePointerPress(x, y) then
+        return
+    end
+    
+    -- Handle game-specific mouse interactions here
+    -- For now, we'll just log the click
+    local Logger = require('src/utils/logger')
+    Logger.debug(string.format("Mouse clicked at (%d, %d) with button %d", x, y, button))
+end
+
+-- Handle mouse release
+function GameScene:mousereleased(x, y, button)
+    -- Let UIManager handle UI interactions first
+    local UIManager = require('src/managers/UIManager')
+    if UIManager.handlePointerRelease(x, y) then
+        return
+    end
+    
+    -- Handle game-specific mouse interactions here
+    local Logger = require('src/utils/logger')
+    Logger.debug(string.format("Mouse released at (%d, %d) with button %d", x, y, button))
+end
+
+-- Handle mouse movement
+function GameScene:mousemoved(x, y, dx, dy)
+    -- Let UIManager handle UI interactions first
+    local UIManager = require('src/managers/UIManager')
+    if UIManager.handlePointerMove(x, y) then
+        return
+    end
+    
+    -- Handle game-specific mouse movement here
+    local Logger = require('src/utils/logger')
+    Logger.debug(string.format("Mouse moved to (%d, %d) with delta (%d, %d)", x, y, dx, dy))
+end
+
+-- Handle window focus
+function GameScene:focus()
+    -- Let UIManager know about focus
+    local success, err = pcall(function()
+        local UIManager = require('src/managers/UIManager')
+        if UIManager.handleFocus then
+            UIManager.handleFocus(true)
+        end
+        
+        -- Reset any input states
+        local InputManager = require('src/managers/InputManager')
+        if InputManager.reset then
+            InputManager.reset()
+        end
+        
+        -- Log focus event
+        local Logger = require('src/utils/logger')
+        Logger.debug("Game window focused")
+    end)
+    
+    if not success then
+        print("Error in GameScene:focus: " .. tostring(err))
+    end
+end
+
+-- Handle window unfocus
+function GameScene:unfocus()
+    -- Let UIManager know about unfocus
+    local success, err = pcall(function()
+        local UIManager = require('src/managers/UIManager')
+        if UIManager.handleFocus then
+            UIManager.handleFocus(false)
+        end
+        
+        -- Reset any input states
+        local InputManager = require('src/managers/InputManager')
+        if InputManager.reset then
+            InputManager.reset()
+        end
+        
+        -- Log unfocus event
+        local Logger = require('src/utils/logger')
+        Logger.debug("Game window unfocused")
+    end)
+    
+    if not success then
+        print("Error in GameScene:unfocus: " .. tostring(err))
+    end
 end
 
 return GameScene 

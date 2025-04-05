@@ -85,7 +85,8 @@ end
 function UIManager.update(dt)
     -- Update all components
     for _, component in ipairs(state.components) do
-        if component.update then
+        -- Only update components that have an update method and are active
+        if component.update and (component.isActive == nil or component:isActive()) then
             component:update(dt)
         end
     end
@@ -94,7 +95,8 @@ end
 -- Draw all UI components
 function UIManager.draw()
     for _, component in ipairs(state.components) do
-        if component.draw then
+        -- Only draw components that have a draw method and are active
+        if component.draw and (component.isActive == nil or component:isActive()) then
             component:draw()
         end
     end
@@ -288,6 +290,17 @@ end
 -- Enable/disable navigation
 function UIManager.setNavigationEnabled(enabled)
     state.navigationEnabled = enabled
+    
+    -- Restore navigation state when re-enabled
+    if enabled and not state.focusedComponent then
+        -- Find first focusable component
+        for _, component in ipairs(state.components) do
+            if component.isFocusable and component:isFocusable() then
+                UIManager.setFocusedComponent(component)
+                break
+            end
+        end
+    end
 end
 
 -- Clear focus
@@ -298,6 +311,28 @@ function UIManager.clearFocus()
         end
         state.focusedComponent = nil
     end
+end
+
+-- Handle window focus changes
+function UIManager.handleFocus(focused)
+    -- Clear focus when window loses focus
+    if not focused then
+        UIManager.clearFocus()
+    else
+        -- Restore focus when window regains focus
+        if not state.focusedComponent then
+            -- Find first focusable component
+            for _, component in ipairs(state.components) do
+                if component.isFocusable and component:isFocusable() then
+                    UIManager.setFocusedComponent(component)
+                    break
+                end
+            end
+        end
+    end
+    
+    -- Update navigation state based on focus
+    UIManager.setNavigationEnabled(focused)
 end
 
 return UIManager 

@@ -231,4 +231,23 @@ function InputManager.handleGamepadPress(joystick, button)
     end
 end
 
+-- Reset input state
+function InputManager.reset()
+    -- Reset input type
+    state.currentInputType = nil
+    
+    -- Reset last input times
+    state.lastInputTime = 0
+    for inputType, _ in pairs(state.lastInput) do
+        state.lastInput[inputType] = 0
+    end
+    
+    -- Reset joystick state
+    state.lastJoystickDirection = nil
+    state.lastJoystickTime = 0
+    
+    -- Reset input type change cooldown
+    state.lastInputTypeChange = 0
+end
+
 return InputManager 

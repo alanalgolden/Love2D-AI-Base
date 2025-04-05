@@ -5,18 +5,23 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
 ## Features
 
 - **Game Engine**
-  - Component-based entity system
+  - Component-based entity system with flexible component management
   - Scene management for different game states
-  - Run management for tracking game sessions
+  - Run management for tracking game sessions and history
   - State management for game variables
   - Seed-based randomization for reproducible gameplay
   - Save/load functionality for game progress
+  - Debug overlay with F3 toggle
+  - Profile management system
+  - Window management with proper scaling
 
 - **Input System**
   - Supports multiple input types (keyboard, mouse, gamepad, touch)
   - Automatic input type detection and switching
   - Configurable key bindings
   - Gamepad support with button mapping
+  - Joystick direction handling
+  - Input type change listeners
 
 - **UI System**
   - Modern, responsive UI components
@@ -24,12 +29,25 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
   - Focus management for accessibility
   - Button component with hover, press, and focus states
   - Debug overlay for development
+  - Automatic focus management when switching input types
+  - Component navigation system (up, down, left, right)
+  - Text component with alignment and font size control
 
 - **Asset Management**
   - Robust image loading with multiple fallback layers
   - Automatic fallback to notfound.png when images are missing
   - Text-based fallback when both image and notfound.png are unavailable
   - Organized asset directory structure
+  - Font management system
+
+- **Game Systems**
+  - Movement system for entity positioning
+  - Collision system with circle-based detection
+  - Combat system with health and attack management
+  - Item system for collectibles and power-ups
+  - Entity tagging system
+  - Component activation/deactivation
+  - System-based architecture for game logic
 
 ## Project Structure
 
@@ -79,9 +97,18 @@ player:addComponent({
     y = 0
 })
 
+-- Add tags
+player:addTag("player")
+player:addTag("combatant")
+
 -- Get a component
 local position = player:getComponent("position")
 position.x = 200
+
+-- Check for tags
+if player:hasTag("player") then
+    -- Do player-specific logic
+end
 ```
 
 ### Scene Management
@@ -92,12 +119,17 @@ Scenes manage different game states (menu, gameplay, settings):
 local SceneManager = require('src/engine/SceneManager')
 
 -- Register scenes
+SceneManager.registerScene("profile", ProfileScene)
 SceneManager.registerScene("menu", MenuScene)
 SceneManager.registerScene("game", GameScene)
 SceneManager.registerScene("settings", SettingsScene)
 
 -- Set current scene
-SceneManager.setScene("menu")
+SceneManager.setScene("profile")
+
+-- Add entities and systems to the current scene
+SceneManager.addEntity(player)
+SceneManager.addSystem(movementSystem)
 ```
 
 ### Run Management
@@ -107,8 +139,15 @@ The RunManager tracks game sessions and progress:
 ```lua
 local RunManager = require('src/engine/RunManager')
 
--- Start a new run
-RunManager.startNewRun()
+-- Start a new run with configuration
+RunManager.startNewRun({
+    difficulty = "normal",
+    seed = 12345
+})
+
+-- Get current run information
+local currentRun = RunManager.getCurrentRun()
+local runHistory = RunManager.getRunHistory()
 
 -- End current run
 RunManager.endCurrentRun()
@@ -123,9 +162,41 @@ local StateManager = require('src/engine/StateManager')
 
 -- Set a state variable
 StateManager.setState("score", 100)
+StateManager.setState("level", 1)
 
 -- Get a state variable
 local score = StateManager.getState("score")
+local level = StateManager.getState("level")
+```
+
+### UI Components
+
+The template includes a robust UI system with various components:
+
+```lua
+local Button = require('src/components/Button')
+local Text = require('src/components/Text')
+local Image = require('src/components/Image')
+
+-- Create a button
+local button = Button.new(x, y, width, height, "Click Me", function()
+    print("Button clicked!")
+end)
+
+-- Set up navigation
+button:setNavigation("up", otherButton)
+button:setNavigation("down", anotherButton)
+
+-- Create text
+local text = Text.new(x, y, width, height, "Hello World", {1, 1, 1, 1})
+text:setFontSize(24)
+text:setAlignment("center")
+
+-- Create an image with fallback support
+local image = Image.new("assets/images/logo.png", x, y, width, height)
+image:setRotation(angle)
+image:setScale(scaleX, scaleY)
+image:setAlpha(0.8)
 ```
 
 ## Asset Handling

@@ -96,6 +96,20 @@ function Scene:isActive()
     return self.active
 end
 
+-- Handle window focus
+function Scene:focus()
+    -- Base implementation - can be overridden by derived scenes
+    local Logger = require('src/utils/logger')
+    Logger.debug("Scene focused: " .. self.name)
+end
+
+-- Handle window unfocus
+function Scene:unfocus()
+    -- Base implementation - can be overridden by derived scenes
+    local Logger = require('src/utils/logger')
+    Logger.debug("Scene unfocused: " .. self.name)
+end
+
 -- Clean up resources
 function Scene:cleanup()
     -- Override in derived scenes

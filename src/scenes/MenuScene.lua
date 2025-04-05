@@ -5,6 +5,7 @@ local Scene = require('src/engine/Scene')
 local Button = require('src/components/Button')
 local Image = require('src/components/Image')
 local UIManager = require('src/managers/UIManager')
+local ProfileManager = require('src/managers/ProfileManager')
 local Logger = require('src/utils/logger')
 
 local MenuScene = {}
@@ -25,6 +26,14 @@ end
 
 -- Initialize the menu scene
 function MenuScene:initialize()
+    -- Check if a profile is selected
+    if not ProfileManager.getCurrentProfile() then
+        Logger.warning("No profile selected, returning to profile selection")
+        local SceneManager = require('src/engine/SceneManager')
+        SceneManager.setScene("profile")
+        return
+    end
+    
     -- Call parent initialize
     Scene.initialize(self)
     
@@ -81,13 +90,30 @@ function MenuScene:createUI()
     table.insert(self.uiComponents, settingsButton)
     UIManager.addComponent(settingsButton)
     
+    -- Change Profile button
+    local changeProfileButton = Button.new(
+        810, startY + (buttonHeight + buttonSpacing) * 2, buttonWidth, buttonHeight, "Change Profile",
+        function()
+            -- Return to profile selection
+            local SceneManager = require('src/engine/SceneManager')
+            SceneManager.setScene("profile")
+        end
+    )
+    table.insert(self.buttons, changeProfileButton)
+    table.insert(self.uiComponents, changeProfileButton)
+    UIManager.addComponent(changeProfileButton)
+    
     -- Quit button
     local quitButton = Button.new(
-        810, startY + (buttonHeight + buttonSpacing) * 2, buttonWidth, buttonHeight, "Quit",
+        810, startY + (buttonHeight + buttonSpacing) * 3, buttonWidth, buttonHeight, "Quit",
         function()
             Logger.info("Quitting game")
-            Logger.flush() -- Ensure all logs are written before quitting
-            love.event.quit()
+            -- Clean up current scene
+            self:cleanup()
+            -- Ensure all logs are written
+            Logger.flush()
+            -- Quit the game
+            love.event.quit(0)
         end
     )
     table.insert(self.buttons, quitButton)
@@ -97,8 +123,10 @@ function MenuScene:createUI()
     -- Set up navigation
     startButton:setNavigation("down", settingsButton)
     settingsButton:setNavigation("up", startButton)
-    settingsButton:setNavigation("down", quitButton)
-    quitButton:setNavigation("up", settingsButton)
+    settingsButton:setNavigation("down", changeProfileButton)
+    changeProfileButton:setNavigation("up", settingsButton)
+    changeProfileButton:setNavigation("down", quitButton)
+    quitButton:setNavigation("up", changeProfileButton)
     
     -- Set initial focus
     UIManager.setFocusedComponent(startButton)

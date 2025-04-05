@@ -16,6 +16,7 @@ function Button.new(x, y, width, height, text, onClick)
     
     -- Text
     self.text = text
+    self.textPadding = {x = 10, y = 10}  -- Default padding
     
     -- Callbacks
     self.onClick = onClick
@@ -52,6 +53,9 @@ function Button.new(x, y, width, height, text, onClick)
     -- Font
     self.font = love.graphics.newFont(32)
     
+    -- Visibility
+    self.visible = true
+    
     return self
 end
 
@@ -68,6 +72,11 @@ end
 
 -- Draw the button
 function Button:draw()
+    -- Skip drawing if button is not visible
+    if self.visible == false then
+        return
+    end
+    
     -- Save current graphics state
     love.graphics.push()
     
@@ -99,11 +108,9 @@ function Button:draw()
     love.graphics.setColor(unpack(self.colors.text))
     love.graphics.setFont(self.font)
     
-    -- Center text
-    local textWidth = self.font:getWidth(self.text)
-    local textHeight = self.font:getHeight()
-    local textX = self.x + (self.width - textWidth) / 2
-    local textY = self.y + (self.height - textHeight) / 2
+    -- Calculate text position with padding
+    local textX = self.x + self.textPadding.x
+    local textY = self.y + self.textPadding.y
     
     love.graphics.print(self.text, textX, textY)
     
@@ -191,6 +198,21 @@ end
 function Button:setSize(width, height)
     self.width = width
     self.height = height
+end
+
+-- Set text padding
+function Button:setTextPadding(x, y)
+    self.textPadding = {x = x, y = y}
+end
+
+-- Set button visibility
+function Button:setVisible(visible)
+    self.visible = visible
+end
+
+-- Get button visibility
+function Button:isVisible()
+    return self.visible ~= false
 end
 
 return Button 

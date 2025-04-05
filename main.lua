@@ -4,6 +4,7 @@
 local InputManager = require('src/managers/InputManager')
 local WindowManager = require('src/managers/WindowManager')
 local UIManager = require('src/managers/UIManager')
+local ProfileManager = require('src/managers/ProfileManager')
 local DebugOverlay = require('src/components/DebugOverlay')
 local Logger = require('src/utils/logger')
 
@@ -14,6 +15,7 @@ local StateManager = require('src/engine/StateManager')
 local SceneManager = require('src/engine/SceneManager')
 
 -- Import Scenes
+local ProfileScene = require('src/scenes/ProfileScene')
 local MenuScene = require('src/scenes/MenuScene')
 local GameScene = require('src/scenes/GameScene')
 local SettingsScene = require('src/scenes/SettingsScene')
@@ -27,12 +29,22 @@ local gameState = {
 }
 
 function love.load()
+    -- Configure logger
+    Logger.configure({
+        bufferSize = 10000,  -- Much larger buffer size to reduce disk writes
+        flushCooldown = 10.0,  -- Much longer flush cooldown to reduce disk writes
+        minLevel = "ERROR",  -- Only log ERROR by default
+        maxLogSize = 512 * 1024,  -- 512KB max log size
+        maxLogFiles = 2  -- Keep only 2 log files
+    })
+    
     Logger.info("Initializing game")
     
     -- Initialize managers
     WindowManager.initialize()
     InputManager.initialize()
     UIManager.initialize()
+    ProfileManager.initialize()
     
     -- Initialize Game Engine
     GameEngine.initialize({
@@ -51,6 +63,7 @@ function love.load()
     SceneManager.initialize()
     
     -- Register scenes
+    SceneManager.registerScene("profile", ProfileScene)
     SceneManager.registerScene("menu", MenuScene)
     SceneManager.registerScene("game", GameScene)
     SceneManager.registerScene("settings", SettingsScene)
@@ -60,8 +73,8 @@ function love.load()
     gameState.debugOverlay:initialize()
     UIManager.addComponent(gameState.debugOverlay)
     
-    -- Set initial scene
-    SceneManager.setScene("menu")
+    -- Set initial scene to profile selection
+    SceneManager.setScene("profile")
     
     Logger.info("Game initialization complete")
 end
@@ -222,4 +235,47 @@ function love.touchmoved(id, x, y, pressure)
     UIManager.handlePointerMove(gameX, gameY)
     StateManager.touchmoved(id, gameX, gameY, pressure)
     Logger.debug(string.format("Touch moved to (%d, %d) with pressure %.2f", gameX, gameY, pressure))
+end
+
+-- Handle window focus
+function love.focus(focused)
+    -- Get current scene
+    local success, err = pcall(function()
+        local SceneManager = require('src/engine/SceneManager')
+        local currentScene = SceneManager.getCurrentScene()
+        
+        if currentScene then
+            if focused then
+                -- Check if focus method exists before calling it
+                if type(currentScene.focus) == "function" then
+                    currentScene:focus()
+                else
+                    local Logger = require('src/utils/logger')
+                    Logger.warning("Scene does not have focus method")
+                end
+            else
+                -- Check if unfocus method exists before calling it
+                if type(currentScene.unfocus) == "function" then
+                    currentScene:unfocus()
+                else
+                    local Logger = require('src/utils/logger')
+                    Logger.warning("Scene does not have unfocus method")
+                end
+            end
+        end
+        
+        local Logger = require('src/utils/logger')
+        Logger.debug("Window focus changed: " .. tostring(focused))
+    end)
+    
+    if not success then
+        print("Error in love.focus: " .. tostring(err))
+    end
+end
+
+-- Ensure logger is flushed when the game is closing
+function love.quit()
+    local Logger = require('src/utils/logger')
+    Logger.flush()
+    return false
 end 
