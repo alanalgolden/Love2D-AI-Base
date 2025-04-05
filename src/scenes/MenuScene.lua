@@ -62,6 +62,16 @@ function MenuScene:createUI()
     local startButton = Button.new(
         810, startY, buttonWidth, buttonHeight, "Start Game",
         function()
+            -- Generate a new seed for the run
+            local GameEngine = require('src/engine/GameEngine')
+            local function generateSeed()
+                local time = os.time()
+                local micro = love.timer.getTime() * 1000000
+                local random = love.math.random(1, 1000000)
+                return time + math.floor(micro) + random
+            end
+            GameEngine.setSeed(generateSeed())
+            
             -- Start a new run
             local runConfig = {
                 difficulty = "normal",
