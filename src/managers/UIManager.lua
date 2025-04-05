@@ -2,6 +2,7 @@
 -- Manages UI components and their interactions across different input types
 
 local UIManager = {}
+local Audio = require('src/components/Audio')
 
 -- State
 local state = {
@@ -261,14 +262,19 @@ end
 
 -- Set focused component
 function UIManager.setFocusedComponent(component)
-    if state.focusedComponent ~= component then
-        if state.focusedComponent and state.focusedComponent.onFocusEnd then
-            state.focusedComponent:onFocusEnd()
-        end
-        state.focusedComponent = component
-        if component and component.onFocusStart then
-            component:onFocusStart()
-        end
+    -- Clear previous focus
+    if state.focusedComponent and state.focusedComponent.onFocusEnd then
+        state.focusedComponent:onFocusEnd()
+    end
+    
+    -- Set new focus
+    state.focusedComponent = component
+    
+    -- Handle new focus
+    if component and component.onFocusStart then
+        component:onFocusStart()
+        -- Play button selection sound
+        Audio.playButtonSelect()
     end
 end
 

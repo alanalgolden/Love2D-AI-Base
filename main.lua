@@ -7,6 +7,7 @@ local UIManager = require('src/managers/UIManager')
 local ProfileManager = require('src/managers/ProfileManager')
 local DebugOverlay = require('src/components/DebugOverlay')
 local Logger = require('src/utils/logger')
+local Audio = require('src/components/Audio')
 
 -- Import Game Engine
 local GameEngine = require('src/engine/GameEngine')
@@ -45,6 +46,7 @@ function love.load()
     InputManager.initialize()
     UIManager.initialize()
     ProfileManager.initialize()
+    Audio.load()  -- Initialize audio system
     
     -- Initialize Game Engine
     GameEngine.initialize({
