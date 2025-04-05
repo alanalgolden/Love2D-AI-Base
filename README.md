@@ -14,14 +14,19 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
   - Debug overlay with F3 toggle
   - Profile management system
   - Window management with proper scaling
+  - Advanced logging system with configurable levels and file rotation
+  - Automatic system initialization and cleanup
+  - Entity tagging and component activation control
 
 - **Input System**
   - Supports multiple input types (keyboard, mouse, gamepad, touch)
   - Automatic input type detection and switching
   - Configurable key bindings
   - Gamepad support with button mapping
-  - Joystick direction handling
-  - Input type change listeners
+  - Joystick direction handling with deadzone and repeat delay
+  - Input type change listeners with cooldown
+  - Input timeout detection
+  - Seamless input type switching
 
 - **UI System**
   - Modern, responsive UI components
@@ -32,6 +37,8 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
   - Automatic focus management when switching input types
   - Component navigation system (up, down, left, right)
   - Text component with alignment and font size control
+  - Image component with fallback support
+  - Automatic component cleanup
 
 - **Asset Management**
   - Robust image loading with multiple fallback layers
@@ -39,6 +46,7 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
   - Text-based fallback when both image and notfound.png are unavailable
   - Organized asset directory structure
   - Font management system
+  - Asset preloading support
 
 - **Game Systems**
   - Movement system for entity positioning
@@ -48,6 +56,9 @@ A modern, feature-rich template for creating games with LÖVE (Love2D). This tem
   - Entity tagging system
   - Component activation/deactivation
   - System-based architecture for game logic
+  - Health regeneration system
+  - Attack cooldown management
+  - Item duration tracking
 
 ## Project Structure
 
@@ -62,9 +73,22 @@ game-template/
 ├── src/
 │   ├── components/     # UI and game components
 │   ├── engine/         # Core game engine systems
-│   ├── managers/       # System managers (input, UI, etc.)
-│   ├── scenes/         # Game scenes (menu, game, settings)
-│   └── utils/          # Utility functions and helpers
+│   │   ├── Component.lua  # Base component class
+│   │   ├── Entity.lua     # Entity management
+│   │   ├── GameEngine.lua # Core engine functionality
+│   │   ├── Scene.lua      # Base scene class
+│   │   ├── SceneManager.lua # Scene management
+│   │   └── System.lua     # Base system class
+│   ├── managers/       # System managers
+│   │   ├── InputManager.lua  # Input handling
+│   │   ├── UIManager.lua     # UI management
+│   │   └── WindowManager.lua # Window management
+│   ├── scenes/         # Game scenes
+│   │   ├── GameScene.lua    # Main gameplay
+│   │   ├── MenuScene.lua    # Main menu
+│   │   └── ProfileScene.lua # Profile selection
+│   └── utils/          # Utility functions
+│       └── logger.lua  # Logging system
 ├── main.lua           # Main game entry point
 └── README.md          # This file
 ```
@@ -95,6 +119,20 @@ player:addComponent({
     type = "velocity",
     x = 0,
     y = 0
+})
+
+player:addComponent({
+    type = "health",
+    current = 100,
+    max = 100,
+    regeneration = 1
+})
+
+player:addComponent({
+    type = "attack",
+    damage = 10,
+    range = 50,
+    cooldown = 0
 })
 
 -- Add tags
@@ -142,7 +180,8 @@ local RunManager = require('src/engine/RunManager')
 -- Start a new run with configuration
 RunManager.startNewRun({
     difficulty = "normal",
-    seed = 12345
+    seed = 12345,
+    characterClass = "warrior"
 })
 
 -- Get current run information
@@ -261,6 +300,29 @@ logo:setAlpha(0.8)
 2. Inherit from the base Scene class
 3. Implement the required methods (initialize, update, draw, cleanup)
 4. Register the scene with the SceneManager
+
+### Logging System
+
+The template includes a robust logging system:
+
+```lua
+local Logger = require('src/utils/logger')
+
+-- Configure logger
+Logger.configure({
+    bufferSize = 10000,  -- Buffer size for log entries
+    flushCooldown = 10.0,  -- Time between log file writes
+    minLevel = "ERROR",  -- Minimum log level to record
+    maxLogSize = 512 * 1024,  -- Maximum log file size
+    maxLogFiles = 2  -- Number of log files to keep
+})
+
+-- Log messages
+Logger.debug("Debug message")
+Logger.info("Info message")
+Logger.warn("Warning message")
+Logger.error("Error message")
+```
 
 ### Building the Game
 
